@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Programming Quiz</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(to right, #f9f9f9, #eaf6ff);
+            color: #333;
+        }
+
+        h1, h2, h3, h4 {
+            color: #2a2a72;
+        }
+
+        #start-screen, #quiz-container, #results-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        .option {
+            padding: 12px 16px;
+            margin: 8px 0;
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            font-size: 16px;
+        }
+
+        .option:hover {
+            background-color: #e3f2fd;
+            border-color: #90caf9;
+        }
+
+        .option.selected {
+            background-color: #c5cae9;
+            border-color: #3f51b5;
+            color: #1a237e;
+        }
+
+        .option.correct {
+            background-color: #c8e6c9;
+            border-color: #388e3c;
+            color: #1b5e20;
+        }
+
+        .option.incorrect {
+            background-color: #ffcdd2;
+            border-color: #e53935;
+            color: #b71c1c;
+        }
+
+        .navigation {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 6px;
+            background-color: #2196f3;
+            color: white;
+            font-weight: bold;
+            font-size: 15px;
+            transition: background 0.3s ease;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #1976d2;
+        }
+
+        button:disabled {
+            background-color: #b0bec5;
+            cursor: not-allowed;
+        }
+
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 2px solid #ddd;
+            background-color: #ffffff;
+        }
+
+        #results-container {
+            border: 2px solid #ddd;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #fff;
+        }
+
+        .question-feedback {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 6px solid;
+        }
+
+        .correct-feedback {
+            background-color: #e8f5e9;
+            border-color: #66bb6a;
+        }
+
+        .incorrect-feedback {
+            background-color: #ffebee;
+            border-color: #ef5350;
+        }
+
+        #timer {
+            text-align: right;
+            font-weight: bold;
+            font-size: 18px;
+            padding: 10px;
+            color: #ff5722;
+        }
+
+        #progress {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            button {
+                width: 100%;
+                margin: 10px 0;
+            }
+
+            .navigation {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Instruction Page -->
+    <div id="start-screen">
+        <h1>Welcome to the Programming Quiz</h1>
+        <p>Please read the instructions before starting:</p>
+        <ul>
+            <li>The quiz contains 10 questions.</li>
+            <li>Each question has one correct answer.</li>
+            <li>You must answer all questions to submit the quiz.</li>
+            <li>You will have a limited time to complete the quiz.</li>
+        </ul>
+        <label for="languageSelect">Select Programming Language:</label>
+        <select id="languageSelect">
+            <option value="Python">Python</option>
+            <option value="Java">Java</option>
+            <option value="C++">C++</option>
+        </select>
+        <br><br>
+        <button onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <!-- Quiz Interface -->
+    <div id="quiz-container" style="display:none;">
+        <div id="timer">Time Left: <span id="time-remaining">600</span> seconds</div>
+        <div id="progress">Question <span id="current-question">1</span> of <span id="total-questions">10</span></div>
+        <div id="question-container"></div>
+        <div class="navigation">
+            <button onclick="previousQuestion()" id="prevBtn">Previous</button>
+            <button onclick="nextQuestion()" id="nextBtn">Next</button>
+            <button onclick="submitQuiz()" id="submitBtn" style="display: none;">Submit Quiz</button>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-container" style="display:none;"></div>
+
+    <script>
+        let currentQuestionIndex = 0;
+        let totalQuestions = 0;
+        let userAnswers = [];
+        let questions = [];
+        let selectedLanguage = 'Python';
+        let timerInterval;
+        let timeLeft = 600;
+
+        function startQuiz() {
+            selectedLanguage = document.getElementById('languageSelect').value;
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('quiz-container').style.display = 'block';
+
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            timeLeft = 600;
+            startTimer();
+            loadQuestion();
+        }
+
+        function startTimer() {
+            document.getElementById('time-remaining').textContent = timeLeft;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time-remaining').textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert('Time is up! Submitting your quiz...');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        async function loadQuestion() {
+            try {
+                const response = await fetch('/get_question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        language: selectedLanguage,
+                        index: currentQuestionIndex
+                    })
+                });
+                const data = await response.json();
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+
+                questions[currentQuestionIndex] = data.question;
+                totalQuestions = data.total_questions;
+                displayQuestion();
+                updateNavigation();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function displayQuestion() {
+            const question = questions[currentQuestionIndex];
+            document.getElementById('current-question').textContent = currentQuestionIndex + 1;
+            document.getElementById('total-questions').textContent = totalQuestions;
+
+            const container = document.getElementById('question-container');
+            let html = `<h3>${question.question}</h3>`;
+            question.options.forEach((option, index) => {
+                const selectedClass = userAnswers[currentQuestionIndex] === index ? 'selected' : '';
+                html += `<div class="option ${selectedClass}" onclick="selectOption(${index})">${option}</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function selectOption(index) {
+            userAnswers[currentQuestionIndex] = index;
+            document.querySelectorAll('.option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.querySelectorAll('.option')[index].classList.add('selected');
+        }
+
+        function updateNavigation() {
+            document.getElementById('prevBtn').disabled = currentQuestionIndex === 0;
+            const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+            document.getElementById('nextBtn').style.display = isLastQuestion ? 'none' : 'inline';
+            document.getElementById('submitBtn').style.display = isLastQuestion ? 'inline' : 'none';
+        }
+
+        async function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                await loadQuestion();
+            }
+        }
+
+        async function nextQuestion() {
+            if (currentQuestionIndex < totalQuestions - 1) {
+                currentQuestionIndex++;
+                await loadQuestion();
+            }
+        }
+
+        async function submitQuiz() {
+            clearInterval(timerInterval);
+            if (userAnswers.length !== totalQuestions) {
+                alert('Please answer all questions before submitting.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/evaluate_answers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        answers: userAnswers,
+                        language: selectedLanguage
+                    })
+                });
+                const result = await response.json();
+                displayResults(result);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function displayResults(result) {
+            const container = document.getElementById('results-container');
+            let html = `<h2>Quiz Results</h2>`;
+            html += `<h3>Total Score: ${result.total_score.toFixed(2)}%</h3>`;
+
+            result.feedback.forEach((feedback, index) => {
+                const question = questions[index];
+                html += `
+                    <div class="question-feedback ${feedback.is_correct ? 'correct-feedback' : 'incorrect-feedback'}">
+                        <h4>Question ${index + 1}: ${question.question}</h4>
+                        <p>Your answer: ${question.options[feedback.selected_answer]}</p>
+                        <p>Correct answer: ${question.options[feedback.correct_answer]}</p>
+                        <p>Explanation: ${feedback.explanation}</p>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            container.style.display = 'block';
+            document.getElementById('quiz-container').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
